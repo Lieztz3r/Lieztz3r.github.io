@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    /* ── Output ── */
+    "target":          "ES2017",        /* async/await native, wide browser support */
+    "module":          "None",          /* single global script — no module system   */
+    "outFile":         "./main.js",     /* compile everything into one file          */
+    "removeComments":  false,           /* keep JSDoc / section comments in output   */
+    "sourceMap":       true,            /* main.js.map for DevTools debugging        */
+
+    /* ── Type checking ── */
+    "strict":                    true,
+    "noImplicitAny":             true,
+    "strictNullChecks":          true,
+    "strictFunctionTypes":       true,
+    "noUnusedLocals":            true,
+    "noUnusedParameters":        true,
+    "noImplicitReturns":         true,
+    "noFallthroughCasesInSwitch":true,
+
+    /* ── Library ── */
+    "lib": ["ES2017", "DOM", "DOM.Iterable"],
+
+    /* ── Misc ── */
+    "skipLibCheck": true
+  },
+  "include": ["main.ts"],
+  "exclude": ["node_modules"]
+}

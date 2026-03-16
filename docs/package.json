@@ -1,0 +1,20 @@
+{
+  "name": "altec-vae-encuesta",
+  "version": "1.0.0",
+  "description": "ALTEC VAE — Backend de Inscripción de Encuesta",
+  "main": "encuesta.js",
+  "scripts": {
+    "start": "node encuesta.js",
+    "dev": "nodemon encuesta.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
