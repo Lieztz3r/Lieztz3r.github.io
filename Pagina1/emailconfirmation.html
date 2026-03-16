@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  ALTEC VAE — Correo de confirmación de inscripción a encuesta
+  ───────────────────────────────────────────────────────────────────
+  Este archivo es la PLANTILLA del correo que se envía al usuario
+  cuando se inscribe en "Inscripción de Encuesta".
+
+  En el backend (encuesta.js), el marcador {{EMAIL}} se reemplaza
+  dinámicamente con el correo del inscrito antes de enviar.
+
+  El formulario dentro del correo envía a: POST /api/survey
+  con los campos: nombre, region, comuna, telefono y el correo
+  que ya viene pre-rellenado como campo oculto.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALTEC VAE — Bienvenida</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d110d;
+      font-family: 'DM Sans', sans-serif;
+      color: #f0f4f0;
+      -webkit-font-smoothing: antialiased;
+      padding: 40px 16px 64px;
+    }
+
+    /* ── Email wrapper ── */
+    .email-wrapper {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .email-header {
+      background: #1a1d1a;
+      border-bottom: 2px solid #62c462;
+      padding: 32px 40px 28px;
+      text-align: center;
+      border-radius: 3px 3px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .email-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(98,196,98,0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 50%, rgba(98,196,98,0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .header-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #62c462;
+      display: block;
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .header-tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 0.82rem;
+      color: #7a9178;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    /* ── Body ── */
+    .email-body {
+      background: #1e221e;
+      padding: 44px 40px 40px;
+    }
+
+    .greeting-line {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #62c462;
+      margin-bottom: 14px;
+    }
+
+    .body-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.22rem;
+      line-height: 1.8;
+      color: #c8d4c8;
+      margin-bottom: 36px;
+    }
+
+    /* Accent rule between text and form */
+    .body-rule {
+      width: 48px;
+      height: 2px;
+      background: linear-gradient(to right, #3a7a3a, #62c462);
+      margin: 0 0 32px 0;
+    }
+
+    /* ── Survey form ── */
+    .survey-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #9ab49a;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(98,196,98,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 2px;
+      color: #f0f4f0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .form-input:focus {
+      border-color: #62c462;
+      background: rgba(98,196,98,0.1);
+    }
+
+    .form-input::placeholder { color: #4a6a4a; }
+
+    /* ── Submit button — disabled until all fields filled ── */
+    .submit-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 14px 20px;
+      background: #3a3a3a;       /* default: grey */
+      border: none;
+      border-radius: 2px;
+      color: #6a6a6a;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: not-allowed;
+      transition: background 0.3s, color 0.3s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    /* Active — all fields filled */
+    .submit-btn.ready {
+      background: #62c462;
+      color: #1a1d1a;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(98,196,98,0.35);
+    }
+
+    .submit-btn.ready:hover {
+      background: #7ad47a;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(98,196,98,0.45);
+    }
+
+    /* Sent state */
+    .submit-btn.sent {
+      background: #2a5a2a;
+      color: #62c462;
+      cursor: default;
+    }
+
+    /* ── Feedback message ── */
+    .form-msg {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      color: #62c462;
+      letter-spacing: 0.04em;
+      min-height: 1.2em;
+      text-align: center;
+    }
+    .form-msg.error { color: #e05555; }
+
+    /* ── Footer ── */
+    .email-footer {
+      background: #141614;
+      border-top: 1px solid #2a3a2a;
+      padding: 24px 40px;
+      text-align: center;
+      border-radius: 0 0 3px 3px;
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #62c462;
+      margin-bottom: 8px;
+    }
+
+    .footer-contact {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      color: #6a8a6a;
+      letter-spacing: 0.06em;
+      line-height: 1.7;
+    }
+
+    .footer-contact a {
+      color: #9ab49a;
+      text-decoration: none;
+    }
+
+    .footer-legal {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.70rem;
+      color: #3a5a3a;
+      margin-top: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Corner bracket decoration on body ── */
+    .email-body-wrap {
+      position: relative;
+    }
+
+    .corner {
+      position: absolute;
+      width: 18px; height: 18px;
+      pointer-events: none;
+    }
+    .corner--tl { top: -1px; left: -1px;
+      border-top: 2px solid #62c462; border-left: 2px solid #62c462; }
+    .corner--tr { top: -1px; right: -1px;
+      border-top: 2px solid #62c462; border-right: 2px solid #62c462; }
+    .corner--bl { bottom: -1px; left: -1px;
+      border-bottom: 2px solid #62c462; border-left: 2px solid #62c462; }
+    .corner--br { bottom: -1px; right: -1px;
+      border-bottom: 2px solid #62c462; border-right: 2px solid #62c462; }
+
+    @media (max-width: 600px) {
+      .email-header,
+      .email-body,
+      .email-footer { padding-left: 24px; padding-right: 24px; }
+      body { padding: 16px 8px 48px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+
+    <!-- Header -->
+    <div class="email-header">
+      <span class="header-logo">ALTEC VAE</span>
+      <span class="header-tagline">Diseño &nbsp;·&nbsp; Construcción &nbsp;·&nbsp; Sustentabilidad</span>
+    </div>
+
+    <!-- Body -->
+    <div class="email-body-wrap" style="position:relative;">
+      <div class="corner corner--tl"></div>
+      <div class="corner corner--tr"></div>
+      <div class="corner corner--bl"></div>
+      <div class="corner corner--br"></div>
+
+      <div class="email-body">
+        <p class="greeting-line">Confirmación de Inscripción</p>
+
+        <p class="body-text">
+          Gracias por inscribirte, si quieres empezar con los trabajos, rellena las casillas de abajo:
+        </p>
+
+        <div class="body-rule"></div>
+
+        <!-- Survey form -->
+        <!--
+          El campo oculto "email" se pre-rellena con el correo del inscrito.
+          En el backend (encuesta.js) se reemplaza {{EMAIL}} antes de enviar.
+          El form POST va a /api/survey — ver encuesta.js para la lógica.
+        -->
+        <form class="survey-form" id="surveyForm" novalidate>
+          <input type="hidden" name="email" value="{{EMAIL}}" />
+
+          <div class="form-field">
+            <label class="form-label" for="s-nombre">Nombre</label>
+            <input class="form-input" type="text" id="s-nombre" name="nombre"
+                   placeholder="Tu nombre completo" autocomplete="name" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="s-region">Región</label>
+            <input class="form-input" type="text" id="s-region" name="region"
+                   placeholder="Ej: Metropolitana" autocomplete="address-level1" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="s-comuna">Comuna</label>
+            <input class="form-input" type="text" id="s-comuna" name="comuna"
+                   placeholder="Ej: Colina" autocomplete="address-level2" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="s-telefono">Número de Teléfono</label>
+            <input class="form-input" type="tel" id="s-telefono" name="telefono"
+                   placeholder="+56 9 XXXX XXXX" autocomplete="tel" />
+          </div>
+
+          <button type="button" class="submit-btn" id="surveySubmit" disabled>Enviar</button>
+          <p class="form-msg" id="formMsg"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="email-footer">
+      <p class="footer-brand">ALTEC VAE</p>
+      <p class="footer-contact">
+        Av. Chicureo 3150, Colina &nbsp;·&nbsp;
+        <a href="tel:+56995336660">+56 9 9533 6660</a> &nbsp;·&nbsp;
+        <a href="mailto:contacto@construye.cl">contacto@construye.cl</a>
+      </p>
+      <p class="footer-legal">© 2024 ALTEC VAE. Todos los derechos reservados.</p>
+    </div>
+
+  </div><!-- /email-wrapper -->
+
+  <script>
+    /* ── Enable submit button only when all fields are filled ── */
+    const form     = document.getElementById('surveyForm');
+    const btn      = document.getElementById('surveySubmit');
+    const msgEl    = document.getElementById('formMsg');
+    const inputs   = form.querySelectorAll('input[type="text"], input[type="tel"]');
+
+    function checkReady() {
+      const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
+      btn.disabled = !allFilled;
+      btn.classList.toggle('ready', allFilled);
+    }
+
+    inputs.forEach(i => i.addEventListener('input', checkReady));
+
+    /* ── Submit ── */
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+
+      const payload = {
+        email:    form.querySelector('[name="email"]').value,
+        nombre:   form.querySelector('[name="nombre"]').value.trim(),
+        region:   form.querySelector('[name="region"]').value.trim(),
+        comuna:   form.querySelector('[name="comuna"]').value.trim(),
+        telefono: form.querySelector('[name="telefono"]').value.trim()
+      };
+
+      btn.disabled = true;
+      btn.classList.remove('ready');
+      btn.textContent = 'Enviando…';
+      msgEl.textContent = '';
+      msgEl.classList.remove('error');
+
+      try {
+        const res = await fetch('/api/survey', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          btn.textContent = 'Enviado ✓';
+          btn.classList.add('sent');
+          msgEl.textContent = '¡Gracias! Nos pondremos en contacto contigo pronto.';
+          inputs.forEach(i => { i.disabled = true; i.style.opacity = '0.5'; });
+        } else {
+          const data = await res.json().catch(() => ({}));
+          msgEl.textContent = data.error || 'Error al enviar. Intenta de nuevo.';
+          msgEl.classList.add('error');
+          btn.disabled = false;
+          btn.classList.add('ready');
+          btn.textContent = 'Enviar';
+        }
+      } catch (e) {
+        msgEl.textContent = 'No se pudo conectar. Intenta más tarde.';
+        msgEl.classList.add('error');
+        btn.disabled = false;
+        btn.classList.add('ready');
+        btn.textContent = 'Enviar';
+      }
+    });
+  </script>
+</body>
+</html>
