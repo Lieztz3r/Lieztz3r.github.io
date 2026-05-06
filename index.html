@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KRATEROI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='white'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@900&family=Inter+Tight:wght@400;800&family=JetBrains+Mono:wght@400&display=swap" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  audio { display: block; }
+  table { border-collapse: collapse; }
+
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --inv-bg: #fff;
+    --inv-fg: #000;
+    --t: 150ms;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.5rem;
+    gap: 2rem;
+  }
+  .hero-logo { width: clamp(160px, 28vw, 320px); height: auto; display: block; user-select: none; }
+  .hero .rule { height: 1px; width: 8rem; background: var(--fg); }
+
+  /* ── AUDIO SECTION ── */
+  .audio-section { border-top: 1px solid var(--fg); padding: 6rem 1.5rem; }
+  @media (min-width: 768px) { .audio-section { padding: 8rem 4rem; } }
+  .audio-grid { margin: 0 auto; max-width: 72rem; display: grid; grid-template-columns: 1fr; gap: 3rem; }
+  @media (min-width: 768px) { .audio-grid { grid-template-columns: 1fr 1fr; gap: 4rem; } }
+
+  .module { display: flex; flex-direction: column; }
+
+  /* shared square */
+  .square {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border: 1px solid var(--fg);
+    background: var(--bg);
+    color: var(--fg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    transition: background-color var(--t), color var(--t);
+    outline: none;
+    cursor: pointer;
+  }
+  .square:hover, .square.dragover { background: var(--inv-bg); color: var(--inv-fg); }
+  .square:focus-visible { outline: 1px solid var(--fg); outline-offset: 4px; }
+
+  /* circle inside squares */
+  .circle {
+    height: 6rem; width: 6rem;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background-color var(--t), color var(--t), border-color var(--t);
+  }
+  /* record circle: black bg, white border by default */
+  .rec-circle { background: var(--bg); color: var(--fg); border-color: var(--fg); }
+  .square:hover .rec-circle { background: var(--inv-bg); color: var(--inv-fg); border-color: var(--inv-fg); }
+
+  .sq-label { margin-top: 2rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; }
+  .sq-timer { margin-top: 1rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; letter-spacing: 0.1em; }
+  .sq-denied { margin-top: 1rem; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; }
+
+  /* ping */
+  .ping-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .ping { position: absolute; height: 6rem; width: 6rem; border: 1px solid currentColor; border-radius: 9999px; animation: ping 1s cubic-bezier(0,0,.2,1) infinite; pointer-events: none; }
+  @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+  .stop-icon { display: block; height: 1.5rem; width: 1.5rem; background: currentColor; }
+
+  /* preview panel */
+  .preview { margin-top: 1.5rem; border: 1px solid var(--fg); padding: 1rem; }
+  .preview-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .preview-name { min-width: 0; flex: 1; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preview-meta { margin-top: 0.25rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .preview-small { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; }
+  .preview-filename { margin-top: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; letter-spacing: 0.1em; }
+  .preview audio { margin-top: 1rem; width: 100%; filter: grayscale(1) contrast(1.2); }
+
+  .btn-clear { border: 1px solid var(--fg); padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1; transition: background-color var(--t), color var(--t); }
+  .btn-clear:hover { background: var(--inv-bg); color: var(--inv-fg); }
+
+  /* cost line */
+  .cost-line { margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--fg); padding-top: 1rem; }
+  .cost-text { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ── FOLDER SECTION ── */
+  .folder-section { border-top: 1px solid var(--fg); padding: 6rem 1.5rem; }
+  @media (min-width: 768px) { .folder-section { padding: 8rem 4rem; } }
+  .folder-inner { margin: 0 auto; max-width: 72rem; }
+  .folder-header { display: flex; flex-direction: column; gap: 1rem; border-bottom: 1px solid var(--fg); padding-bottom: 1.5rem; }
+  @media (min-width: 768px) { .folder-header { flex-direction: row; align-items: baseline; justify-content: space-between; } }
+  .folder-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; }
+  .folder-total { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .folder-empty { margin-top: 3rem; text-align: center; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; opacity: 0.6; }
+  .folder-table { margin-top: 2rem; width: 100%; overflow-x: auto; }
+  .folder-table table { width: 100%; }
+  .folder-table th { padding: 0.75rem 1rem 0.75rem 0; text-align: left; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; font-weight: normal; border-bottom: 1px solid var(--fg); }
+  .folder-table th:last-child { padding-right: 0; }
+  .folder-table td { padding: 0.75rem 1rem 0.75rem 0; border-bottom: 1px solid var(--fg); vertical-align: middle; }
+  .folder-table td:last-child { text-align: right; padding-right: 0; }
+  .td-name { font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+  .td-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; letter-spacing: 0.1em; }
+  .td-mono-upper { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .badge { border: 1px solid var(--fg); padding: 0.125rem 0.5rem; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.3em; }
+  .row-paid { opacity: 0.4; }
+  .row-paid .td-name { text-decoration: line-through; }
+  .btn-remove { border: 1px solid var(--fg); padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1; transition: background-color var(--t), color var(--t); }
+  .btn-remove:hover { background: var(--inv-bg); color: var(--inv-fg); }
+
+  .payment-bar { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--fg); padding: 1.5rem; }
+  @media (min-width: 768px) { .payment-bar { flex-direction: row; align-items: center; justify-content: space-between; } }
+  .payment-label { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; }
+  .payment-amount { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.5rem; letter-spacing: 0.05em; margin-top: 0.25rem; }
+  .payment-sub { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; margin-top: 0.25rem; }
+  .btn-pay { border: 1px solid var(--fg); padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; transition: background-color var(--t), color var(--t); white-space: nowrap; }
+  .btn-pay:hover:not(:disabled) { background: var(--inv-bg); color: var(--inv-fg); }
+  .btn-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── LIBRARY SECTION ── */
+  .library-section { border-top: 1px solid var(--fg); padding: 6rem 1.5rem; }
+  @media (min-width: 768px) { .library-section { padding: 8rem 4rem; } }
+  .library-inner { margin: 0 auto; max-width: 72rem; }
+  .library-header { display: flex; flex-direction: column; gap: 1rem; border-bottom: 1px solid var(--fg); padding-bottom: 1.5rem; }
+  @media (min-width: 768px) { .library-header { flex-direction: row; align-items: baseline; justify-content: space-between; } }
+  .library-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; }
+  .library-meta  { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .conn-row { margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .conn-status { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.75; }
+  .conn-status.ok      { color: #9bff9b; opacity: 1; }
+  .conn-status.pending { color: #ffd58a; opacity: 1; }
+  .conn-status.bad     { color: #ff9b9b; opacity: 1; }
+
+  .btn-cfg { border: 1px solid var(--fg); padding: 0.5rem 0.75rem; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; transition: background-color var(--t), color var(--t); white-space: nowrap; }
+  .btn-cfg:hover { background: var(--inv-bg); color: var(--inv-fg); }
+
+  .auto-saved-hint { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.6; }
+
+  .lib-badge { display: inline-block; margin-left: 0.5rem; border: 1px solid var(--fg); padding: 0.05rem 0.4rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.2em; vertical-align: middle; }
+  .lib-badge.ok      { color: #9bff9b; border-color: #9bff9b; }
+  .lib-badge.pending { color: #ffd58a; border-color: #ffd58a; }
+  .lib-badge.paid    { color: #9bff9b; border-color: #9bff9b; }
+
+  .library-empty { margin-top: 3rem; text-align: center; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; opacity: 0.6; }
+  .library-list  { margin-top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+
+  .lib-session { border: 1px solid var(--fg); }
+  .lib-session-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--fg); }
+  .lib-session-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.2em; }
+  .lib-session-sub   { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+
+  .lib-item { display: grid; grid-template-columns: 28px 1fr auto auto auto auto; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem; border-top: 1px solid #333; cursor: pointer; transition: background-color var(--t); }
+  .lib-item:first-of-type { border-top: none; }
+  .lib-item:hover { background: #0f0f0f; }
+  .lib-item.selected { background: #1a1a1a; }
+  .lib-checkbox { width: 16px; height: 16px; border: 1px solid var(--fg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .lib-checkbox::after { content: ''; display: block; width: 8px; height: 8px; background: transparent; transition: background-color var(--t); }
+  .lib-item.selected .lib-checkbox::after { background: var(--fg); }
+  .lib-name { font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .lib-size, .lib-price, .lib-format { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+  .lib-format { border: 1px solid var(--fg); padding: 0.125rem 0.5rem; font-size: 0.5rem; }
+  .lib-del { border: 1px solid var(--fg); padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1; transition: background-color var(--t), color var(--t); cursor: pointer; }
+  .lib-del:hover { background: var(--inv-bg); color: var(--inv-fg); }
+  @media (max-width: 640px) {
+    .lib-item { grid-template-columns: 24px 1fr auto; row-gap: 0.25rem; }
+    .lib-size, .lib-format { grid-column: 2 / 3; }
+    .lib-price { grid-column: 3 / 4; }
+    .lib-del { grid-column: 3 / 4; }
+  }
+
+  .library-pay-bar { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--fg); padding: 1.5rem; }
+  @media (min-width: 768px) { .library-pay-bar { flex-direction: row; align-items: center; justify-content: space-between; } }
+  .lib-pay-label { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; }
+  .lib-pay-amount { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.5rem; letter-spacing: 0.05em; margin-top: 0.25rem; }
+  .lib-pay-sub { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; margin-top: 0.25rem; }
+  .lib-pay-sub.err { color: #ff9b9b; opacity: 1; }
+  .lib-pay-sub.ok  { color: #9bff9b; opacity: 1; }
+  .btn-lib-pay { border: 1px solid var(--fg); padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; transition: background-color var(--t), color var(--t); white-space: nowrap; }
+  .btn-lib-pay:hover:not(:disabled) { background: var(--inv-bg); color: var(--inv-fg); }
+  .btn-lib-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── FOOTER ── */
+  footer { padding: 2rem 1.5rem 4rem; }
+  footer .rule { height: 1px; width: 100%; background: var(--fg); }
+  footer p { margin-top: 1.5rem; text-align: center; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4em; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- HERO -->
+  <section class="hero" aria-label="KRATEROI">
+    <img src="krateroi.jpeg" alt="KRATEROI" class="hero-logo" />
+    <div class="rule" aria-hidden="true"></div>
+  </section>
+
+  <!-- AUDIO -->
+  <section class="audio-section" aria-label="Audio">
+    <div class="audio-grid">
+
+      <!-- UPLOAD -->
+      <div class="module">
+        <div id="dropzone" class="square" role="button" tabindex="0" aria-label="Subir audio">
+          <div class="circle">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+              <path d="M20 28 V8 M12 16 L20 8 L28 16" />
+              <path d="M6 30 V34 H34 V30" />
+            </svg>
+          </div>
+          <span class="sq-label">Subir audio</span>
+        </div>
+        <input id="fileInput" type="file" class="hidden" accept=".mp3,.wav,.m4a,.ogg,.flac,.aac,.webm,audio/*" />
+        <div id="uploadPreview" class="preview hidden">
+          <div class="preview-row">
+            <div style="min-width:0;flex:1">
+              <p id="fileName" class="preview-name"></p>
+              <p id="fileMeta" class="preview-meta"></p>
+            </div>
+            <button id="clearFile" type="button" class="btn-clear" aria-label="Borrar archivo">×</button>
+          </div>
+          <audio id="uploadAudio" controls></audio>
+          <div class="cost-line">
+            <span id="uploadCostText" class="cost-text">--:-- · $0,00</span>
+            <span class="auto-saved-hint">Guardado en carpeta automáticamente</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORD -->
+      <div class="module">
+        <button id="recBtn" type="button" class="square" aria-label="Grabar audio" aria-pressed="false">
+          <div class="ping-wrap">
+            <span id="ping" class="ping hidden" aria-hidden="true"></span>
+            <div class="circle rec-circle">
+              <svg id="micIcon" width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+                <rect x="11" y="4" width="6" height="14" rx="3" />
+                <path d="M7 14 a7 7 0 0 0 14 0" />
+                <path d="M14 21 V25" />
+                <path d="M10 25 H18" />
+              </svg>
+              <span id="stopIcon" class="stop-icon hidden" aria-hidden="true"></span>
+            </div>
+          </div>
+          <span id="recLabel" class="sq-label">Grabar</span>
+          <span id="recTimer" class="sq-timer">00:00:00</span>
+          <span id="recDenied" class="sq-denied hidden">Acceso denegado</span>
+        </button>
+        <div id="recPreview" class="preview hidden">
+          <p class="preview-small">Última grabación</p>
+          <p id="recFileName" class="preview-filename"></p>
+          <audio id="recAudio" controls></audio>
+          <div class="cost-line">
+            <span id="recCostText" class="cost-text">--:-- · $0,00</span>
+            <span class="auto-saved-hint">Guardado en carpeta automáticamente</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CARPETA (combined library + folder) -->
+  <section class="library-section" aria-label="Carpeta">
+    <div class="library-inner">
+      <div class="library-header">
+        <h2 class="library-title">Carpeta</h2>
+        <span id="libraryMeta" class="library-meta">0 audios · 0 sesiones</span>
+      </div>
+
+      <div class="conn-row">
+        <p id="libConnStatus" class="conn-status pending">Comprobando conexión…</p>
+        <button id="libRetryBtn" type="button" class="btn-cfg">Reintentar ahora</button>
+      </div>
+
+      <p id="libraryEmpty" class="library-empty">Sin audios guardados</p>
+      <div id="libraryList" class="library-list hidden"></div>
+
+      <div class="library-pay-bar">
+        <div>
+          <div class="lib-pay-label">Total seleccionado</div>
+          <div id="libPayAmount" class="lib-pay-amount">$0,00</div>
+          <div id="libPaySub" class="lib-pay-sub">0 audios seleccionados</div>
+        </div>
+        <button id="libPayBtn" type="button" class="btn-lib-pay" disabled>Pagar: $0,00</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="rule"></div>
+    <p>Krateroi</p>
+  </footer>
+</main>
+
+<script src="app.js" defer></script>
+</body>
+</html>
