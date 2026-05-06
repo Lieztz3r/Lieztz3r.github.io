@@ -1,23 +1,3 @@
-/* Krateroi — front-end logic.
- *
- * Single "Carpeta" section (formerly Carpeta + Biblioteca):
- *   • Every uploaded/recorded audio is auto-saved to IndexedDB.
- *   • One Pagar button does both jobs of the original two sections —
- *     opens a receipt for the selected items AND queues them for upload
- *     to the Krateroi Transcriptor dashboard.
- *
- * Dashboard connection is zero-config:
- *   • Hard-coded to http://127.0.0.1:18790 (loopback-only intake server).
- *   • No bearer token: the loopback bind is the security boundary.
- *
- * Offline-tolerant upload pipeline:
- *   • If the dashboard is unreachable when Pagar is pressed, the items
- *     stay in IndexedDB with pendingUpload=true.
- *   • A retry pump runs every 5 s, on tab focus, on tab visibility-change,
- *     on page load, and whenever the user clicks "Reintentar ahora".
- *   • As soon as the dashboard (or a standalone queue_server) becomes
- *     reachable, queued items ship automatically.
- */
 (function () {
   'use strict';
 
