@@ -6,11 +6,6 @@
   var DASH_URL = 'http://127.0.0.1:18790';
   var RETRY_INTERVAL_MS = 5 * 1000;
 
-  var IS_PUBLIC_HOST = (function () {
-    var h = location.hostname;
-    return h !== 'localhost' && h !== '127.0.0.1' && h !== '';
-  })();
-
   var DB_NAME    = 'krateroi-library';
   var DB_VERSION = 1;
   var DB_STORE   = 'audios';
@@ -174,7 +169,9 @@
   var SESSION_ID    = sessionStorage.getItem('krateroi.session.id');
   var SESSION_START = parseInt(sessionStorage.getItem('krateroi.session.start') || '0', 10);
   if (!SESSION_ID) {
-    SESSION_ID = 's-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    var arr = new Uint8Array(12);
+    crypto.getRandomValues(arr);
+    SESSION_ID = 's-' + Array.from(arr).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
     SESSION_START = Date.now();
     sessionStorage.setItem('krateroi.session.id', SESSION_ID);
     sessionStorage.setItem('krateroi.session.start', String(SESSION_START));
@@ -243,6 +240,7 @@
 
   function libraryAutoSave(meta) {
     if (!meta || !meta.id || !meta.blob) return;
+    // If the item already exists, preserve its paid/uploaded state.
     var existing = libCache.find(function (x) { return x.id === meta.id; });
     var item = {
       id:           meta.id,
@@ -387,7 +385,7 @@
     btn.disabled = selectedItems.length === 0;
   }
 
-  /* ── Receipt ── */
+  /* ── Receipt (was the "Simular pago" function in the old folder) ── */
 
   function openReceipt(items) {
     if (!items.length) return;
@@ -395,7 +393,7 @@
     var docNo = 'KR-' + Date.now();
     var dt = new Date().toLocaleString('es-CL', { dateStyle: 'long', timeStyle: 'medium' });
     var rows = items.map(function (i) {
-      return '<tr><td>' + escapeHtml(i.name) + '</td><td class="mono">' + formatDuration(i.duration) + '</td><td class="mono right">' + formatCLP(i.cost) + '</td></tr>';
+      return '<tr><td>' + escapeHtml(i.name) + '</td><td class="mono">' + escapeHtml(formatDuration(i.duration)) + '</td><td class="mono right">' + escapeHtml(formatCLP(i.cost)) + '</td></tr>';
     }).join('');
     var html = '<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Boleta ' + docNo + '<\/title>' +
       "<style>@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@900&family=Inter+Tight:wght@400;800&family=JetBrains+Mono:wght@400&display=swap');" +
@@ -433,10 +431,7 @@
     el.textContent = text;
   }
 
-  // Returns a resolved Promise<false> immediately when on a public host,
-  // avoiding any loopback request that the browser would block anyway.
   function probeDashboard() {
-    if (IS_PUBLIC_HOST) return Promise.resolve(false);
     return fetch(DASH_URL + '/info', { method: 'GET', cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (j) {
@@ -474,9 +469,11 @@
       });
   }
 
+  // Walks IndexedDB for pendingUpload items and ships them. Called on page
+  // load, after Pagar, on focus/visibility, on the periodic timer, and on
+  // manual "Reintentar ahora".
   var _retryInFlight = false;
   function retryPendingUploads() {
-    if (IS_PUBLIC_HOST) return Promise.resolve();
     if (_retryInFlight) return Promise.resolve();
     var pending = libCache.filter(function (i) { return i.pendingUpload && !i.uploadedAt; });
     if (!pending.length) return Promise.resolve();
@@ -500,8 +497,11 @@
       });
     });
     return p.then(function () {
-      _retryInFlight = false;
       renderLibrary();
+      }).catch(function(err) {
+        console.warn('[krateroi] retry error:', err);
+      }).then(function() {
+        _retryInFlight = false;
       if (failed === 0) {
         setConnStatus('ok', sent + ' audio' + (sent === 1 ? '' : 's') + ' enviado' + (sent === 1 ? '' : 's'));
       } else if (sent > 0) {
@@ -512,6 +512,9 @@
     });
   }
 
+  // Pagar: combined function (was Carpeta's "Simular pago" + Biblioteca's
+  // "Pagar"). Marks items as paid, opens the receipt for newly-paid items,
+  // and queues all selected unsent items for upload to the dashboard.
   document.getElementById('libPayBtn').addEventListener('click', function () {
     var selectedItems = libCache.filter(function (i) { return libSelected[i.id]; });
     if (!selectedItems.length) return;
@@ -532,6 +535,7 @@
     });
 
     Promise.all(ops).then(function () {
+      // Open receipt for this Pagar action (only items that were newly paid).
       if (newlyPaid.length) openReceipt(newlyPaid);
       libSelected = {};
       renderLibrary();
@@ -544,7 +548,6 @@
   });
 
   document.getElementById('libRetryBtn').addEventListener('click', function () {
-    if (IS_PUBLIC_HOST) return; // no-op on public host
     probeDashboard().then(function (online) {
       if (online) retryPendingUploads();
     });
@@ -559,44 +562,35 @@
     return item;
   }
 
-  // When running on a public host the dashboard is unreachable by design.
-  // Show a static informational status instead of attempting (and failing)
-  // any network request to the loopback address.
-  if (IS_PUBLIC_HOST) {
-    setConnStatus('bad', 'Dashboard no disponible en hosting público — usa la app desde localhost');
-  } else {
-    setConnStatus('pending', 'Comprobando conexión…');
-  }
-
+  setConnStatus('pending', 'Comprobando conexión…');
   libGetAll().then(function (items) {
     libCache = (items || []).map(migrate);
     renderLibrary();
-    if (!IS_PUBLIC_HOST) {
-      return probeDashboard().then(function (online) {
-        if (online) retryPendingUploads();
-      });
-    }
+    return probeDashboard();
+  }).then(function (online) {
+    if (online) retryPendingUploads();
   }).catch(function (err) {
     console.warn('[krateroi] failed to load library:', err);
   });
 
-  // Periodic pump — only runs when connected to localhost.
-  if (!IS_PUBLIC_HOST) {
-    window.setInterval(function () {
-      if (document.hidden) return;
-      probeDashboard().then(function (online) {
-        if (online) retryPendingUploads();
-      });
-    }, RETRY_INTERVAL_MS);
+  // Periodic pump — short interval so the user doesn't wait long after
+  // opening the dashboard.
+  window.setInterval(function () {
+    if (document.hidden) return;   // skip work when tab isn't visible
+    probeDashboard().then(function (online) {
+      if (online) retryPendingUploads();
+    });
+  }, RETRY_INTERVAL_MS);
 
-    function flushNow() {
-      probeDashboard().then(function (online) {
-        if (online) retryPendingUploads();
-      });
-    }
-    window.addEventListener('focus', flushNow);
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) flushNow();
+  // Immediate retry when the user comes back to the tab — covers the case
+  // where they close Krateroi, open the dashboard, then re-focus Krateroi.
+  function flushNow() {
+    probeDashboard().then(function (online) {
+      if (online) retryPendingUploads();
     });
   }
+  window.addEventListener('focus', flushNow);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) flushNow();
+  });
 })();
